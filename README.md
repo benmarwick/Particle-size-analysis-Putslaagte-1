@@ -1,16 +1,16 @@
-## Supplementary materials for the particle size analyses of sediment samples from Putslaagte 1, South Africa
+# Supplementary materials for the particle size analyses of sediment samples from Putslaagte 1, South Africa
 
-# Author of this repository:
+## Author of this repository:
 
 Ben Marwick (benmarwick@gmail.com)
 
-# Published in: 
+## Published in: 
 
 Mackay, A., Alex Sumner, Zenobia Jacobs, Ben Marwick, Kyla Bluff, Matthew Shaw. 2014. Putslaagte 1 (PL1), the Doring River, and the later Middle Stone Age in southern Africa's Winter Rainfall Zone. Quaternary International http://dx.doi.org/10.1016/j.quaint.2014.05.007
 
-# Contents:
+## Contents:
 
-An rmarkdown file (Notes-on-particle-size-data-from-PL1.rmd) that can be executed in RStudio (version 0.98.682). This file contains the narrative found in the published paper and R (version 3.0.3) code used to analyse the data and generate the figures. To execute this file, open R and run `knitr::knit2html("Notes-on-particle-size-data-from-PL1.rmd")`. 
+One rmarkdown file (Notes-on-particle-size-data-from-PL1.rmd) that can be executed in RStudio (version 0.98.682). This file contains the narrative found in the published paper and R (version 3.0.3) code used to analyse the data and generate the figures. To execute this file, ensure all the files are together in a directory, open R and run `knitr::knit2html("Notes-on-particle-size-data-from-PL1.rmd")`. 
 
 One html file (Notes-on-particle-size-data-from-PL1.html). This is the output produced when the rmd file is executes. It includes the text and figures. The rmd file also generates SVG files for each of the figures, but these are not included here.  
 
@@ -20,7 +20,7 @@ One text file (PL1_LPSA_data_WI14.txt) containing all the raw data from the Hori
 
 One CSV file (PL1_context_summary_forBM.csv) containing contextual information about the locations where the samples were collected from. 
 
-# Licences:
+## Licences:
 
 Text: CC-BY (http://creativecommons.org/licenses/by/4.0/)
 
@@ -28,7 +28,7 @@ Code: MIT (http://opensource.org/licenses/MIT year: 2014, copyright holder: Ben 
 
 Data: CC0 (http://creativecommons.org/publicdomain/zero/1.0/)
 
-# Dependencies: 
+## Dependencies: 
 
 Identified using `sessionInfo()`:
 
