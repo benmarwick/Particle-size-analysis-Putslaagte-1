@@ -1,5 +1,9 @@
 # Supplementary materials for the particle size analyses of sediment samples from Putslaagte 1, South Africa
 
+## Compendium DOI: 
+ 
+http://dx.doi.org/10.6084/m9.figshare.1035786
+
 ## Author of this repository:
 
 Ben Marwick (benmarwick@gmail.com)
