@@ -1,0 +1,492 @@
+---
+title: "Notes on particle size data from PL1"
+author: Ben Marwick
+date: Thursday, March 20, 2014
+output:
+  html_document:
+    theme: yeti
+  word_document: default
+---
+## Notes on particle size data from PL1
+
+To investigate the environmental history of site formation, small amounts (<5 g) of loose bulk sediment from each spit was separated with a 2 mm sieve and the <2 mm fraction was analysed with a Horiba LA-950 Laser Diffraction Particle Size Distribution Analyzer (15 replicates per spit). Data were analysed using R version 3.0.2 (R Core Team 2014) with Folk and Ward (1957) summary statistics were computed following Blott and Bye (2001) using the G2Sd package (Gallon and Fournier 2013). Stratigraphically constrained clustering of spits was used for quantitative definition of depositional units. We used the constrained sum-of-squares
+clustering method (CONISS) implemented in the rioja package (Juggins 2012) to ensure that only stratigraphically adjacent spits are considered for membership of the same cluster (Grimm 1987).
+
+Consistent with the field observations, particle size analysis indicates three major depositional units with a diffuse boundaries around 0.8 m and 1.2 m below the surface. The lower unit consists of fine sand that is moderately sorted, fine skewed, and mesokurtic. The middle unit is distinctive by a reduction in the sand fraction and decrease in sorting.  Further work is currently underway to determine if this is a palaeosol. The upper unit is also dominated by fine skewed fine sand but is distinctive by being even less well sorted and platykurtic. 
+
+The dominance of fine sand suggests that the site is a slackwater deposit, which are usually fine-grained (fine sand and coarse silt) flood sediments deposited in areas of the floodplain that are sheltered from high-velocity flood flows (Heine and Heine 2002). Slackwater deposits often represent floods of high magnitude, indicating extreme precipitation events in the upper reaches of the river catchments (Benito et al. 2003, Baker et al. 2009).
+
+From about 1.0 m below the surface there is a uniform fining upwards sequence. In a floodplain landscape this is frequently interpreted as a point-bar a deposit. Upward-fining is typical in meandering channel point bar deposits because the energy of the flow at the top of the point bar is less than at the base where lag material is deposited in the thalweg (Smith 1987). Alternative models for this architecture are ephemeral rivers that flow for limited periods of time, or flash floods of limited duration (Reading 2001). Given the slackwater characteristics of this deposit, further work is required to be certain if the fining up sequence indicates an increasing frequency of flood events at the site over time or an unrelated gradual shift in the river architecture. 
+
+#### References:
+
+Baker VR, Kochel RC, Patton PC and Pickup G 2009 Palaeohydrologic Analysis of Holocene Flood Slack-Water Sediments. In:  (eds). Modern and Ancient Fluvial Systems 229-239. Blackwell Publishing Ltd.
+
+Blott, S., Pye, K. 2001. Gradistat: grain size distribution and statistics package for the analysis of unconsolidated sediment. Earth, Surface Processes and Landforms 26, 1237-1248
+
+Benito G, Sopeña A, Sánchez-Moya Y, Machado MaJ and Pérez-González A 2003. Palaeoflood record of the Tagus River (Central Spain) during the Late Pleistocene and Holocene. Quaternary Science Reviews 22(15–17), 1737-1756.
+
+Folk, R.L., Ward, W.C. 1957. Brazos River bar: a study in the significance of grain size parameters. Journal of Sedimentary Petrology 27, 3-26
+
+Gallon, Regis K.and Jerome Fournier 2013, G2Sd: Grain-size Statistics and Description of Sediment, R package version 2.1, http://cran.r-project.org/web/packages/G2Sd/index.html
+
+Grimm, E.C. 1987. CONISS: A FORTRAN 77 program for stratigraphically constrained cluster analysis by the method of incremental sum of squares. Computers & Geosciences, 13, 13-35.
+
+Heine K and Heine JT 2002. A paleohydrologic reinterpretation of the Homeb Silts, Kuiseb River, central Namib Desert (Namibia) and paleoclimatic implications. CATENA 48(1–2), 107-130. [I see you've already got this one, but the journal title is properly styled in all caps]
+
+Juggins, S. 2012. rioja: Analysis of Quaternary Science Data, R package version 0.8-5. http://cran.r-project.org/package=rioja
+
+R Core Team 2014 R: A language and environment for statistical computing. Vienna, Austria, R Foundation for Statistical Computing. http://www.R-project.org/.
+
+Reading HG 2001. Clastic facies models, a personal perspective. Bull Geol Soc Denmark 48, 101-115.
+
+Smith, D.G. 1987. Meandering river point bar lithofacies models: modern and ancient examples compared. In: Recent Developments in Fluvial Sedimentology. F.G. Ethridge, R.M. Flores and M.D. Harvey (Eds.). SEPM Special Publication 39, p. 83–91.'
+
+#### Figures
+
+Figure 1. Particle size distributions from samples representative of each of the three depositional units.
+
+Figure 2. Ternary plot showing the dominance of sand and silt in the samples
+
+Figure 3. Stratigraphic plot showing percentages by mass of sand, silt and clay along with Folk and Ward (1957) summary statistics and the results of the stratigraphically constrained cluster analysis. 
+
+
+
+```{r get-data, echo = FALSE, message = FALSE, warnings = FALSE, cache = TRUE}
+options(warn=-1) # turn off all warnings
+library(knitr)
+opts_chunk$set(comment=NA, fig.width=7)
+# get LPSA data - ensure it's in the same folder as this rmd file
+data <- read.csv("PL1_LPSA_data_WI14.txt", header = FALSE, stringsAsFactors = FALSE)
+# get contextual data - ensure it's in the same folder as this rmd file
+context_depths <- read.csv("PL1_context_summary_forBM.csv", header = TRUE, stringsAsFactors = FALSE)
+```
+
+```{r clean-data, echo = FALSE, message = FALSE, warnings = FALSE, cache = TRUE, results = 'hide'}
+# delete first row and first 23 columns to get only sample 
+# names, size classes and sample data. We're also removing
+# column 25 and the very last column because they are empty
+suppressWarnings(suppressMessages(library(data.table)))
+DT <- data.table(data[-1,-c(1:23, 25, ncol(data))])
+
+# convert a few errant characters to numbers: http://stackoverflow.com/a/19146595/1036500
+for (j in colnames(DT)[2:ncol(DT)]) set(DT,j=j,value=as.numeric(DT[[j]]))
+
+# get measurements
+meas <- DT[, unlist(c("V24", names(DT)[seq(3, ncol(DT), 3)])), with = FALSE]
+
+# get size classes 
+sizes <- rbindlist(lapply(seq(3,ncol(DT),3), function(j) { DT[, c(1, j-1,j+1), with=F ]}))
+
+# merge sizes and measurements back together
+setkey(meas, V24)
+setkey(sizes, V24)
+data1_l <- meas[sizes]
+
+# put in order of size class
+data1_l <- data1_l[order(V26)]
+
+# extract just measurements, size classes and sample labels
+size <- as.numeric(na.omit(unique(data1_l$V26)))
+measurements <- data1_l[,c(which( colnames(data1_l) =="V24"), which( colnames(data1_l)=="V27" ) : which( colnames(data1_l)=="V303")), with = FALSE]
+setnames(measurements,  c("sample.id", size))
+
+# require(reshape2)
+# data2 <- melt(measurements, id.vars = 'sample.id' )
+# # convert characters to numbers: http://stackoverflow.com/a/19146595/1036500
+# for (j in colnames(data2)[2:ncol(data2)]) set(data2,j=j,                                              value=as.character(data2[[j]]))
+# for (j in colnames(data2)[2:ncol(data2)]) set(data2,j=j,                                              value=as.numeric(data2[[j]]))  
+```
+
+```{r plot-prep, echo = FALSE, message = FALSE, warnings = FALSE, results = 'hide', cache = TRUE}
+# compute mean values for each sample
+# replace the pattern of digit-digit with nothing to group replicates together
+measurements2 <- measurements
+measurements2$sample.id <- gsub("-[[:digit:]]-[[:digit:]]", "", measurements2$sample.id)
+# get averages of multiple runs on the same sub-sample
+library(data.table)
+measurements2_means <- measurements2[, lapply(.SD, mean), by = sample.id]
+# above line doesn't work when knitting, so try dplyr
+# from http://stackoverflow.com/a/22647021/1036500
+# devtools::install_github("hadley/dplyr", ref = "colwise")
+# library(dplyr)
+#  measurements2_means <- measurements2 %.%
+#                          group_by(sample.id) %.%
+#                          summarise_each(funs(mean))
+
+# reshape for plotting
+require(reshape2)
+data4 <- melt(measurements2_means, id.vars = 'sample.id' )
+# convert characters to numbers: http://stackoverflow.com/a/19146595/1036500
+for (j in colnames(data4)[2:ncol(data4)]) set(data4,j=j,                                              value=as.character(data4[[j]]))
+for (j in colnames(data4)[2:ncol(data4)]) set(data4,j=j,                                              value=as.numeric(data4[[j]]))  
+```
+
+```{r plot-means, echo = FALSE, message = FALSE, warnings = FALSE, results = 'hide', fig.keep = 'none', cache = TRUE}
+# plot means of each sample
+xaxbreaks <-   c(4000, 2000, 1000, 500, 250, 125, 63, 31, 16, 8, 4, 2, 0.5, 0.12, 0.04)
+
+# plot all samples as facets 
+suppressWarnings(suppressMessages(library(ggplot2)))
+ggplot(data4, aes(group = sample.id,  variable, value)) + 
+  geom_line()  +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_x_log10(breaks = xaxbreaks, labels = xaxbreaks) +
+  geom_vline(xintercept = c(62, 4), colour = 'grey40', size = 1) +
+  xlab("Particle Size (um)") +   
+  geom_text(aes(x=2,y=max(data4$value),label = "Clay")) +
+  geom_text(aes(x=30,y=max(data4$value),label = "Silt")) +
+  geom_text(aes(x=1900,y=max(data4$value),label = "Sand")) + 
+  facet_wrap(~ sample.id)
+
+# how to plot just one sample at a time...
+samp <- c("PL1-C9") #, "PL1-C59") # change this to get a different sample
+data5 <- data4[   data4$sample.id %in% samp, ]
+ggplot(data5, aes(colour = sample.id,  variable, value)) + 
+  geom_line(size = 1.5, aes(linetype =  sample.id))  +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_x_log10(breaks = xaxbreaks, labels = xaxbreaks) +
+  geom_vline(xintercept = c(62, 4), colour = 'grey40', size = 1) +
+  xlab("Particle Size (um)") +   
+  geom_text(aes(x=2,y=max(data4$value),label = "Clay"), colour = "black") +
+  geom_text(aes(x=30,y=max(data4$value),label = "Silt"), colour = "black") +
+  geom_text(aes(x=1900,y=max(data4$value),label = "Sand"), colour = "black") +
+  theme_minimal(base_size = 12) +
+  scale_colour_discrete(name  ="Sample") +
+  scale_linetype_discrete(name  ="Sample") +
+  theme(legend.justification=c(1,0), legend.position=c(0.25,0.75))
+```
+
+```{r plot-depths-prep, echo = FALSE, message = FALSE, warnings = FALSE, results = 'hide', cache = TRUE}
+# plot by depths
+
+# add depths on by merging by context numbers
+data4$context <- as.numeric(gsub("PL1-C", "", data4$sample.id))
+depths <- context_depths[!(is.na(context_depths$context)) & context_depths$sq == 1, c(1,4)]
+data4 <- merge(data4, depths, by = "context")
+data4[, sample.id:=NULL] # delete sample.id column
+data4[, context:=NULL] #  delete context column
+```
+
+```{r plot-depths, echo = FALSE, message = FALSE, warnings = FALSE, fig.keep = 'last', cache = TRUE, fig.width = 7}
+
+par(mar=c(3, 3, 1, 1))
+
+# plot all samples as facets 
+suppressWarnings(suppressMessages(library(ggplot2)))
+ggplot(data4, aes(group = depth,  variable, value)) + 
+  geom_line()  +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_x_log10(breaks = xaxbreaks, labels = xaxbreaks) +
+  geom_vline(xintercept = c(62, 4), colour = 'grey40', size = 1) +
+  xlab("Particle Size (um)") +   
+  geom_text(aes(x=2,y=max(data4$value),label = "Clay")) +
+  geom_text(aes(x=30,y=max(data4$value),label = "Silt")) +
+  geom_text(aes(x=1900,y=max(data4$value),label = "Sand")) + 
+  facet_wrap(~ depth)
+
+# how to plot just one sample at a time...
+samp <- c(0.25, 0.9, 1.7) #, "PL1-C59") # change this to get a different sample
+data5 <- data4[   data4$depth %in% samp, ]
+ggplot(data5, aes(colour = as.factor(depth),  variable, value)) + 
+  geom_line(size = 1.1, aes(linetype =  as.factor(depth)))  +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_x_log10(breaks = xaxbreaks, labels = xaxbreaks) +
+  geom_vline(xintercept = c(62, 4), colour = 'grey40', size = 1) +
+  xlab("Particle Size (um)") +   
+   ylab("Percent mass") +
+  annotate("text", x=2,y=max(data4$value),label = "Clay", colour = "black") +
+  annotate("text", x=30,y=max(data4$value),label = "Silt", colour = "black") +
+  annotate("text", x=1900,y=max(data4$value),label = "Sand", colour = "black") +
+  theme_minimal(base_size = 10) +
+  scale_colour_discrete(name  ="Depth") +
+  scale_linetype_discrete(name  ="Depth") +
+  theme(legend.justification=c(1,0), legend.position=c(0.25,0.65))
+
+svg("multiple_samples.svg", width = 6, height = 3)
+ggplot(data5, aes(colour = as.factor(depth),  variable, value)) + 
+  geom_line(size = 0.75, aes(linetype =  as.factor(depth)))  +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_x_log10(breaks = xaxbreaks, labels = xaxbreaks) +
+  geom_vline(xintercept = c(62, 4), colour = 'grey40', size = 1) +
+  xlab("Particle Size (um)") +   
+  ylab("Percent mass") +
+  annotate("text", x=2,y=max(data4$value),label = "Clay", colour = "black") +
+  annotate("text", x=30,y=max(data4$value),label = "Silt", colour = "black") +
+  annotate("text", x=1900,y=max(data4$value),label = "Sand", colour = "black") +
+  theme_minimal(base_size = 10) +
+  scale_colour_discrete(name  ="Depth") +
+  scale_linetype_discrete(name  ="Depth") +
+  theme(legend.justification=c(1,0), legend.position=c(0.25,0.55))
+dev.off()
+
+
+
+
+# x <- as.vector(data5[[3]])           # Sample data
+# x <- x[x>0]
+# qqnorm(x, datax=TRUE, log="x", axes=FALSE) # Probability plot with a logarithmic data axis
+# percents <- c(0.001, 0.025, 0.165, 0.500, 0.835, 0.975, 0.999)
+# axis(side = 2, at = qnorm(percents), label = as.character(percents), las = 2, cex=0.8)
+# axis(side = 1)
+
+```
+
+```{r ternary-plot-prep, echo = FALSE, message = FALSE, warnings = FALSE, results = 'hide', cache = TRUE}
+# add depths on by merging by context numbers
+measurements2_means$context <- as.numeric(gsub("PL1-C", "", measurements2_means$sample.id))
+depths <- context_depths[!(is.na(context_depths$context)), c(1,4)]
+measurements2_means <- merge(measurements2_means, depths, by = "context")
+measurements2_means[, sample.id:=NULL] # delete sample.id column
+measurements2_means[, context:=NULL] #  delete context column
+
+# need to transpose table so sample = column and size class = row names
+stat <-   data.table(t(measurements2_means))
+# put depths as col names
+tmp <- as.vector(as.matrix(stat[nrow(stat),1:ncol(stat), with = FALSE]))
+# delete row with depths
+stat <- stat[-nrow(stat),]
+# create column to order values
+stat$size <- (as.numeric(as.character(size)))
+# order 
+stat <- stat[ order(-size), ]
+# convert to data table of numeric type
+for (j in colnames(stat)) set(stat,j=j, value=as.character(stat[[j]]))
+for (j in colnames(stat)) set(stat,j=j, value=as.numeric(stat[[j]])) 
+
+# delete size column, not needed anymore
+stat <- stat[, -which(names(stat) == 'size'),  drop=FALSE, with = FALSE]
+# put colnames back on again
+setnames(stat, as.character(tmp))
+# add last size class of zero
+stat <- rbindlist(list(stat, as.list(c(rep(0, ncol(stat))))))
+# add size classes as row name
+rownames(stat) <- round(c(rev(size),0),5)
+
+# Here we can compute sand-silt-clay %s
+# using Wentworth classes...
+# sand: 2000 - 62.5 um
+# silt: 62.5 - 4 um
+# clay: < 4 um
+
+# add size column to subset by
+stat$size <- as.numeric(as.character(rownames(stat)))
+
+sand <- colSums(stat[ stat$size >= 62.5 & stat$size < 2000, ] ) 
+silt <- colSums(stat[ stat$size >= 4 & stat$size < 62.5, ] ) 
+clay <- colSums(stat[ stat$size >= 0 & stat$size < 4, ] )
+# combine into one data frame
+three_classes <- data.frame(CLAY = clay,
+                            SILT = silt,
+                            SAND = sand)
+# remove size row
+three_classes <- three_classes[-nrow(three_classes),]
+# keep rownames as depths
+# row.names(three_classes) <- gsub("PL1-", "", row.names(three_classes))
+
+# remove size column
+stat <- stat[,!names(stat) == 'size', with = FALSE]
+```
+
+```{r tern-plot, echo = FALSE, message = FALSE, warnings = FALSE, cache = TRUE, fig.height = 6}
+# plot samples in ternary plot
+# see here for more details: 
+# http://cran.r-project.org/web/packages/soiltexture/vignettes/soiltexture_vignette.pdf
+suppressWarnings(suppressMessages(require(soiltexture)))
+
+# draw triangle with samples plotted
+# Display the USDA texture triangle:
+par(mar=c(1, 1, 1, 2.1))
+geo <- TT.plot(class.sys="USDA.TT", 
+               cex.main = 0.5, # these are font sizes, adjust as you like
+               cex.axis = 0.5,
+               cex.lab = 0.5)
+# Display the text
+TT.text(
+  tri.data = three_classes,
+  geo = geo,
+  labels =  row.names(three_classes),
+  font = 2,
+  col = "blue", 
+  tri.sum.tst = FALSE,
+  cex = 0.75 # size of point labels, feel free to adjust
+) #
+
+```
+
+```{r stats, echo = FALSE, message = FALSE, warnings = FALSE, results = 'hide', cache = TRUE}
+# only allowed these sizes to compute the stats, so we have to 
+# interpolate from our data, then subset, since our data don't 
+# include all of these sizes
+gransize <- c(25000, 20000, 16000, 12500, 10000, 8000, 
+              6300, 5000, 4000, 2500, 2000, 1600, 1250, 1000, 800, 
+              630, 500, 400, 315, 250, 200, 160, 125, 100, 80, 
+              63, 50, 40, 0)
+
+# Interpolate from data to determine values at allowed sizes
+revsize <- c(rev(size), 0)
+# compute loess function for each sample
+loes <- lapply(1:ncol(stat), function(x) loess(unlist(stat[, x, with = FALSE]) ~ revsize, stat))
+# generate predictions of values at allowed sizes for each sample
+predi <- lapply(loes, function(i) predict(i, data.frame(revsize = gransize[gransize < 3000])))
+# draw plots
+# windows()
+# setup grid of plots
+# par( mfrow = c( 2, 3 ) )
+# sapply(predi, function(i) plot(i))
+# make data frame
+interp_table <- data.frame(predi)
+# give row names
+row.names(interp_table) <- gransize[gransize < 3000]
+# change -ve numbers to zero
+interp_table[interp_table < 0 ] <- 0
+# give column names back for sample IDs
+colnames(interp_table) <- tmp
+
+# compute particle size stats
+suppressWarnings(suppressMessages(require(G2Sd)))
+# This next line will make a table of commonly used 
+# grain size stats. We want mean, sd and skewness.
+
+# Note that when modes is set to TRUE, 
+# then you have to use mouse to click on the modal 
+# point for each plot, then press escape to move on to 
+# the next sample's plot. Currently I've set the function
+# to modes=FALSE so you don't have to worry about that.
+# After the last sample all the data will be generated. 
+# Definitions of the  terms used can be found here
+# http://cran.r-project.org/web/packages/G2Sd/G2Sd.pdf or by 
+# typing ?granstat at the R prompt
+stats <- as.data.frame(t(granstat(interp_table, statistic="all", aggr=TRUE, modes=FALSE )))
+# subset table
+stats_full <- stats
+
+# arithmatic 
+# stats <- stats_full[,c('mean.arith.um', 
+#                   'sd.arith.um' ,
+#                   'skewness.arith.um', 
+#                   'kurtosis.arith.um')]
+# folk and ward
+stats <- stats_full[,c('Mean.fw.um', 
+                  'Sd.fw.um' ,
+                  'Skewness.fw.um', 
+                  'Kurtosis.fw.um')]
+
+
+# convert to data frame of numeric type
+stats <- data.frame(apply(stats, 2, function(x) as.numeric(as.character(x))))
+
+# give sensible row names
+rownames(stats) <- rownames(three_classes)
+# 
+suppressWarnings(suppressMessages(require(rioja)))
+
+# ?chclust # to get information how the clustering is done
+# add a dendrogram from constrained cluster analysis
+# coniss is a stratigraphically constrained cluster analysis by
+# method of incremental sum of squares
+# diss <- dist(stats)
+# clust <- chclust(diss, method = "coniss")
+# # broken stick model to suggest significant zones, 3?
+# # bstick(clust)
+# # plot with clusters
+# # par(ask = T) # prompt for user
+# 
+# x <- strat.plot(stats,
+#                # assume sample ID relates to depth in a direct way
+#                # yvar = as.numeric(gsub("C", "", rownames(three_classes))),
+#                 yvar =  as.numeric(row.names(stats)),
+#                 col.line = "black", # try others that you like
+#                 lwd.line = 1,    # ditto
+#                 clust = clust,
+#                 y.rev = TRUE,
+#                 ylabel = "depth below surface (m)",
+#                 xSpace = 0.05
+# )
+# # add lines to indicate clusters, leave out if it looks odd
+# # addClustZone(x, clust, 3, col = "red")
+# 
+# # plot individual samples using G2Sd::granplot
+# # par(ask=T) 
+# # par(mfrow=c(2,3))
+# # for (i in 1:6)# on affichera que les 6 premières stations
+# # {
+# # granplot(interp_table,xc=i,main=names(interp_table)[i],hist=T,cum=T)
+# # }
+# # sapply(1:ncol(interp_table), function(i) granplot(interp_table,xc=i,hist=TRUE,cum=TRUE,main="Grain-size Distribution", col.hist="gray",col.cum="red"))
+# 
+# # plot individual samples using G2Sd::gragrandistribnplot
+# # put columns in order first
+# nums <- tmp # as.numeric(gsub("PL1-C", "", tmp)) # get sample number
+# idx1 <- 1:length(nums) # get index for samples
+# names(nums) <- idx1 # attach index to numbers
+# nums_sorted <- sort(nums) # sort by sample number
+# idx2 <- as.numeric(names(nums_sorted)) # get index of sorted sample numbers
+# interp_table <- interp_table[,idx2] # rearrange columns of data frame
+# 
+# grandistrib(interp_table, scale="fine", xlab = "")
+
+```
+
+```{r combi-plot,  echo = FALSE, message = FALSE, warnings = FALSE, cache = TRUE, fig.height = 4, fig.width = 7}
+
+# combine three size classes with stats
+combi <- data.frame(cbind(three_classes, stats))
+# replace colnames with more sensible ones
+colnames(combi) <- c("clay (%)", "silt (%)", "sand (%)", "mean (um)", "st. dev. (um)", "skew (um)", "kurtosis (um)")
+# rearrange columns to put sand-silt-clay
+combi <- combi[c("sand (%)", "silt (%)", "clay (%)", "mean (um)", "st. dev. (um)", "skew (um)", "kurtosis (um)")]
+
+suppressWarnings(suppressMessages(require(rioja)))
+
+# ?chclust # to get information how the clustering is done
+# add a dendrogram from constrained cluster analysis
+# coniss is a stratigraphically constrained cluster analysis by
+# method of incremental sum of squares
+diss <- dist(stats)
+clust <- chclust(diss, method = "coniss")
+# broken stick model to suggest significant zones, 3?
+# bstick(clust)
+# plot with clusters
+# par(ask = T) # prompt for user
+# bottom, left, top, right
+# none of this makes a difference...
+# par(mar=c(2, 8, 2, 1))
+# par(mai = c(2, 8, 2, 1))
+# 
+# par(mar=c(4,5.5,2,1))
+# par(oma=c(0,0,0,0) )
+x <- strat.plot(combi,
+               # assume sample ID relates to depth in a direct way
+               # yvar = as.numeric(gsub("C", "", rownames(three_classes))),
+                yvar =  as.numeric(row.names(combi)),
+                col.line = "black", # try others that you like
+                lwd.line = 1,    # ditto
+                clust = clust,
+                y.rev = TRUE,
+                cex.xlabel = 0.75,
+                cex.axis = 0.75,
+                cex.ylabel = 0.75,
+                cex.yaxis = 0.75,
+                ylabel = "depth below surface (m)",
+                xSpace = 0.05
+               )
+# save SVG to file for editing
+svg("stratplot.svg", width= 6.5, height=3)
+x <- strat.plot(combi,
+               # assume sample ID relates to depth in a direct way
+               # yvar = as.numeric(gsub("C", "", rownames(three_classes))),
+                yvar =  as.numeric(row.names(combi)),
+                col.line = "black", # try others that you like
+                lwd.line = 1,    # ditto
+                clust = clust,
+                y.rev = TRUE,
+                cex.xlabel = 0.75,
+                cex.axis = 0.75,
+                cex.ylabel = 0.75,
+                cex.yaxis = 0.75,
+                ylabel = "depth below surface (m)",
+                xSpace = 0.05
+               )
+dev.off()
+```
